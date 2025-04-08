@@ -1,0 +1,19 @@
+\chapter{Summary \& Conclusion}
+\section{Conclusion}
+
+The methods presented show that they are effective in solving the bunker supply problem. The MILP method proposed is shown to be able to find good solutions for small and medium problems, but is only able to do so in reasonable time for small problems. In contrast, the ALNS method is both effective and practical for all problem sizes tested. By being able to adequately solve problem sizes of up to 100 customers, this project is a significant advancement from previous students' work which is only able to solve for up to 20 customers. Furthermore, the proposed ALNS method is able to improve upon one of best known solutions from the benchmark. While the ALNS method is generally superior to MILP, it comes at the cost of being able to prove optimality. As such, while ALNS can be used for practical daily planning, MILP can be used to retroactively check routes planned by ALNS, to ensure that they are close to optimal.
+
+\section{Future Work}
+However, other novel methods, such as machine learning or even quantum methods may also provide speed-ups in solving the problem. However, according to the no-free-lunch principle, these other methods may have other drawbacks, and it may not be immediately clear which of them would be the most suitable.
+
+Additionally, the author has identified a few ways to improve on the proposed methods.
+\begin{enumerate}
+\item Use of more efficient MILP formulations of the VRP, such as the 3 index or 2 index formulations in \citep{cattaruzza_vehicle_2018}, which can reduce the number of decision variables and improve solve times.
+\item Use of advanced exact methods like Branch Cut and Price to solve the problem.
+\item Use of hybrid methods like matheuristics to solve the problem. Combining both linear programming and heuristic methods can be done which may result in a better method. For instance, one of the repair operators may involving using the MILP engine to find an optimal solution, for a reduced sub-problem.
+\item Further experimentation of alternative destroy and repair operators, such as destroying routes by Kruskal clusters to find operators which are more performant.
+\item Hyperparameter tuning of ALNS, to find better parameters to suit the problem type bunker suppliers are facing.
+\item More efficient algorithmic implementation of ALNS or implementation in faster compiled programming languages like Rust.
+\end{enumerate}
+
+More research can be done into these other methods to determine if they are suitable. The work done in this report in the previous sections can be used as a basis of comparison to determine their performance.
