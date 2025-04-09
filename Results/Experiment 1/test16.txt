@@ -1,0 +1,51 @@
+Solver command line: []
+
+Read LP format model from file C:\Users\caleb\AppData\Local\Temp\tmpw_1tx1hn.pyomo.lp
+Reading time = 0.03 seconds
+x1: 110 rows, 103 columns, 332 nonzeros
+Set parameter TimeLimit to value 180
+Set parameter Threads to value 1
+Set parameter MIPFocus to value 0
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i7-10510U CPU @ 1.80GHz, instruction set [SSE2|AVX|AVX2]
+Thread count: 4 physical cores, 8 logical processors, using up to 1 threads
+
+Non-default parameters:
+TimeLimit  180
+Threads  1
+
+Optimize a model with 110 rows, 103 columns and 332 nonzeros
+Model fingerprint: 0x5bc69dba
+Variable types: 54 continuous, 49 integer (49 binary)
+Coefficient statistics:
+  Matrix range     [1e+00, 1e+03]
+  Objective range  [2e-01, 1e+01]
+  Bounds range     [1e+00, 1e+03]
+  RHS range        [1e+00, 1e+03]
+Found heuristic solution: objective -0.0000000
+Presolve removed 54 rows and 48 columns
+Presolve time: 0.00s
+Presolved: 56 rows, 55 columns, 422 nonzeros
+Variable types: 6 continuous, 49 integer (49 binary)
+
+Root relaxation: objective 5.704000e+01, 26 iterations, 0.00 seconds (0.00 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0   57.04000    0    6   -0.00000   57.04000      -     -    0s
+H    0     0                      18.1000000   57.04000   215%     -    0s
+H    0     0                      56.8100000   57.04000  0.40%     -    0s
+H    0     0                      56.9400000   57.04000  0.18%     -    0s
+     0     0   57.04000    0   12   56.94000   57.04000  0.18%     -    0s
+     0     0 infeasible    0        56.94000   56.94000  0.00%     -    0s
+
+Explored 1 nodes (40 simplex iterations) in 0.02 seconds (0.00 work units)
+Thread count was 1 (of 8 available processors)
+
+Solution count 4: 56.94 56.81 18.1 -0 
+
+Optimal solution found (tolerance 1.00e-04)
+Best objective 5.694000000000e+01, best bound 5.694000000000e+01, gap 0.0000%
+
