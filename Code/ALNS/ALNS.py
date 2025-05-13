@@ -40,14 +40,12 @@ N = 100
 FILE = 'shuffled_data/RC201_shuffled'
 # FILE = 'experiment2_data/C201_test'
 N_VEHICLES = 3
-# CAPACITY = Decimal(100)
 CAPACITY = 50
 DEMAND_TYPES = 5
 VEHICLE_COMPARMENTS = 5
 MAX_CAPACITY = np.array([CAPACITY]*DEMAND_TYPES)
 EMPTY_CAPACITY = np.array([0]*DEMAND_TYPES)
 PRICE = np.array([1]*DEMAND_TYPES)
-# ZETA = Decimal('0.01')
 ZETA = 0.1
 parameters = InputParameters(N_VEHICLES=N_VEHICLES,DEMAND_TYPES=DEMAND_TYPES,VEHICLE_COMPARMENTS=VEHICLE_COMPARMENTS,
                                 DEPOT_LOADING_SCALAR= 0.2, MAX_CAPACITY=MAX_CAPACITY,EMPTY_CAPACITY=EMPTY_CAPACITY, ZETA=ZETA, PRICE = PRICE)
@@ -117,19 +115,13 @@ def update_weights(weights,score,learning_rate,iteration_count):
             weights[i] = (1-learning_rate)*weights[i] + learning_rate*(score[i]/iteration_count[i])
         else: # weights not used, just update with reduction
             weights[i] = (1-learning_rate)*weights[i]
-    '''
-    temp = weights[op_used] + (score-prev_score)*learning_rate
-    if temp >0: #if weights would be adjusted to be negative, ignore it
-        weights[op_used] += (score-prev_score)*learning_rate'''
     return weights
-
 
 def normalize(probs):
     prob_factor = 1 / sum(probs)
     return [prob_factor * p for p in probs]
 
 SCORING = [1,0.5,0.25]
-# SEED = 69
 LEARNING_RATE = 0.1 ## Select a value larger than 0
 best_obj = 0
 prev_obj = 0
@@ -149,8 +141,8 @@ destroy_weights_list= []
 cycles = 0
 rng = np.random.default_rng()
 pbar = tqdm(total = est_cycles)
+
 while StoppingCriteria(temperature, non_improvement):
-    # print(routes)
     destroy_index = rng.choice([j for j in range(DESTROY_OPERTATORS)],p = normalize(destroy_weights))
     repair_index = rng.choice([j for j in range(REPAIR_OPERTATORS)],p = normalize(repair_weights))
     destroy_weights_list.append(tuple(normalize(destroy_weights)))
