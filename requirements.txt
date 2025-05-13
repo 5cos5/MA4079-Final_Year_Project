@@ -1,0 +1,8 @@
+matplotlib=3.8.4
+numpy=1.26.4
+ortools=9.11.4210
+pandas=2.2.2
+pyomo=6.8.2
+python=3.9.19
+scikit-learn=1.6.0
+scipy=1.13.1

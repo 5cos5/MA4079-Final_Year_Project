@@ -38,7 +38,8 @@ class Input():
 
     @classmethod
     def load_csv(cls, FILE:str, N:int, parameters):
-        FILE_NAME = "C:/Users/caleb/Desktop/Study/FYP/Data/"+FILE+".csv"
+        # FILE_NAME = "C:/Users/caleb/Desktop/Study/FYP/Data/"+FILE+".csv"
+        FILE_NAME = "Data/"+FILE+".csv"
         data = pd.read_csv(FILE_NAME)
         data.columns = data.columns.astype(str)
         df = data[:N+1]
@@ -59,7 +60,7 @@ class Input():
             return np.trunc(values*10**decs)/(10**decs)
         distances = trunc(distances)
         # distances = np.round(distances, decimals=2)
-
+        print(total_revenue)
         return cls (indexes = indexes, cust_no=cust_no,coordinates = coordinates, distances = distances, service_time= service_time, 
                     demands = demands,start_time_windows = start_time_windows, end_time_windows = end_time_windows,total_demand = total_demand,
                     revenue = revenue, total_revenue = total_revenue)
