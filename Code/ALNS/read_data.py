@@ -58,9 +58,7 @@ class Input():
         distances = squareform(pdist(coordinates, metric="euclidean"))
         def trunc(values, decs=1):
             return np.trunc(values*10**decs)/(10**decs)
-        distances = trunc(distances)
-        # distances = np.round(distances, decimals=2)
-        print(total_revenue)
+        distances = trunc(distances) #distances truncated to 2dp following benchmark dataset
         return cls (indexes = indexes, cust_no=cust_no,coordinates = coordinates, distances = distances, service_time= service_time, 
                     demands = demands,start_time_windows = start_time_windows, end_time_windows = end_time_windows,total_demand = total_demand,
                     revenue = revenue, total_revenue = total_revenue)
