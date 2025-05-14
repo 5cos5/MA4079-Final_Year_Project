@@ -6,3 +6,4 @@ pyomo=6.8.2
 python=3.9.19
 scikit-learn=1.6.0
 scipy=1.13.1
+tqdm=4.65.0
