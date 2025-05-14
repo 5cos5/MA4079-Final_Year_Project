@@ -1,11 +1,9 @@
-from read_data_expt2 import Input, InitialData, InputParameters
-from model_check import route_check, objective_function,distance_travelled,replace_consecutive_depots
-# from greedy_insertion import initial_greedy_insertion_distance
+from read_data import Input, InitialData, InputParameters
+from model_check import route_check, objective_function,distance_travelled,goods_delivered,replace_consecutive_depots
 from initial import initial_greedy_insertion_distance
 from destroy import random_remove_point,greedy_remove_distance,shaw_removal
-from repair import best_insertion_fastest,random_cust_best_insertion_fastest,best_regret2_fastest,best_regret2,best_insertion
+from repair import random_cust_best_insertion,best_regret2,best_insertion
 from trip_generator import create_trips, remove_trips, remove_depots,remove_repeated_depot
-# from route import Routes
 from plot_data import plot_route, plot_time
 import numpy as np
 import timeit
@@ -13,10 +11,8 @@ from tqdm import tqdm
 from math import ceil
 import matplotlib.pyplot as plt
 import copy
-from collections import defaultdict
-from decimal import Decimal
 
-def ALNS(FILE,N_VEHICLES,CAPACITY):
+def ALNS(FILE,N,N_VEHICLES,CAPACITY,PLOT = False):
     start = timeit.default_timer()
     temperature = 50
     cooling= 0.995 # 0<aplha<1
@@ -34,21 +30,19 @@ def ALNS(FILE,N_VEHICLES,CAPACITY):
 
     def Accept(obj,temp_obj,temperature):
         rand_no = rng.random()
-        # print('Temperature:',temperature)
-        # print('Obj_diff', obj - temp_obj)
-        # print(np.exp(-(obj - temp_obj)/(temperature)))
         if temp_obj>obj or rand_no < np.exp(-(float(obj) - float(temp_obj))/(temperature)):
             return True
         else:
             return False
 
-    N = 25
+    # N = 100
     # FILE = 'shuffled_ordered_data/R211_shuffled_ordered'
     # FILE = 'test_data/test6'
     # FILE = 'test_data/R208_test'
-    # FILE = 'shuffled_data/R108_shuffled'
-    # N_VEHICLES = 3
-    # CAPACITY = 50
+    # FILE = 'shuffled_data/RC201_shuffled'
+    # FILE = 'experiment3_data/R211_test'
+    # N_VEHICLES = 8
+    # CAPACITY = 100
     DEMAND_TYPES = 5
     VEHICLE_COMPARMENTS = 5
     MAX_CAPACITY = np.array([CAPACITY]*DEMAND_TYPES)
@@ -56,7 +50,7 @@ def ALNS(FILE,N_VEHICLES,CAPACITY):
     PRICE = np.array([10]*DEMAND_TYPES)
     ZETA = 0.1
     parameters = InputParameters(N_VEHICLES=N_VEHICLES,DEMAND_TYPES=DEMAND_TYPES,VEHICLE_COMPARMENTS=VEHICLE_COMPARMENTS,
-                                    DEPOT_LOADING_SCALAR= 0.2, MAX_CAPACITY=MAX_CAPACITY,EMPTY_CAPACITY=EMPTY_CAPACITY, ZETA=ZETA, PRICE=PRICE)
+                                    DEPOT_LOADING_SCALAR= 0.2, MAX_CAPACITY=MAX_CAPACITY,EMPTY_CAPACITY=EMPTY_CAPACITY, ZETA=ZETA,PRICE =PRICE)
     data = Input.load_csv(FILE= FILE, N= N, parameters= parameters)
     route1_cust_no = [1]
     route2_cust_no = [1]
@@ -85,13 +79,11 @@ def ALNS(FILE,N_VEHICLES,CAPACITY):
         initial_time= [time_start_1]*N_VEHICLES
     )
     routes = initial_greedy_insertion_distance(data,initial_data,parameters)
-    # print(routes)
-    # print("Objective:", objective_function(routes,data,initial_data,parameters))
+    print(routes)
+    print("Objective:", objective_function(routes,data,initial_data,parameters))
 
 
     def destroy_operator (routes, index, data,initial_data,parameters,degree_of_destruction):
-        # print('destroy_index' , destroy_index)
-        # print('routes b4 destroy', routes)
         if index == 0: #random_removal
             routes = random_remove_point(routes,data,initial_data,parameters,degree_of_destruction)
         elif index == 1: #worst distance removal
@@ -103,41 +95,15 @@ def ALNS(FILE,N_VEHICLES,CAPACITY):
         
 
     def repair_operator(routes, index, data,initial_data,parameters):
-        # print('repair index', repair_index)
-        # print('routes b4 repair', routes)
         if index == 0:
-            routes = random_cust_best_insertion_fastest(routes,data,initial_data,parameters)
+            routes = random_cust_best_insertion(routes,data,initial_data,parameters)
         if index == 1:
-            routes1 = best_insertion(routes,data,initial_data,parameters)
-            # routes2 = best_insertion_fast(routes,data,initial_data,parameters)
-            # assert routes1 == routes2
-            routes = routes1
+            routes = best_insertion(routes,data,initial_data,parameters)
         elif index == 2:
-            routes1 = best_regret2(routes,data,initial_data,parameters)
-            # routes2 = best_regret2_fast(routes,data,initial_data,parameters)
-            # assert routes1 == routes2
-            routes = routes1
+            routes = best_regret2(routes,data,initial_data,parameters)
         return routes
 
-    def update_weights(weights,prev_score,score,op_used,learning_rate):
-        # weights[op_used] = weights[op_used]*(1-learning_rate) + (score-prev_score)*learning_rate
-        temp = weights[op_used] + (score-prev_score)*learning_rate
-        if temp >0: #if weights would be adjusted to be negative, ignore it
-            weights[op_used] += (score-prev_score)*learning_rate
-        return weights
-
-
-    def update_weights_new(weights,score,op_used,learning_rate):
-        # weights[op_used] = weights[op_used]*(1-learning_rate) + (score-prev_score)*learning_rate
-        weights[op_used] = (1-learning_rate)*weights[op_used] + learning_rate*score
-        '''
-        temp = weights[op_used] + (score-prev_score)*learning_rate
-        if temp >0: #if weights would be adjusted to be negative, ignore it
-            weights[op_used] += (score-prev_score)*learning_rate'''
-        return weights
-    
-    def update_weights_newest(weights,score,learning_rate,iteration_count):
-    # weights[op_used] = weights[op_used]*(1-learning_rate) + (score-prev_score)*learning_rate
+    def update_weights(weights,score,learning_rate,iteration_count):
         for i in range(len(weights)):
             if iteration_count[i] != 0:
                 weights[i] = (1-learning_rate)*weights[i] + learning_rate*(score[i]/iteration_count[i])
@@ -151,7 +117,6 @@ def ALNS(FILE,N_VEHICLES,CAPACITY):
         return [prob_factor * p for p in probs]
 
     SCORING = [1,0.5,0.25]
-    # SEED = 69
     LEARNING_RATE = 0.1 ## Select a value larger than 0
     best_obj = 0
     prev_obj = 0
@@ -170,9 +135,9 @@ def ALNS(FILE,N_VEHICLES,CAPACITY):
     destroy_weights_list= []
     cycles = 0
     rng = np.random.default_rng()
-    pbar = tqdm(total = est_cycles)
+    pbar = tqdm(total = est_cycles,smoothing= 0.1)
+
     while StoppingCriteria(temperature, non_improvement):
-        # print(routes)
         destroy_index = rng.choice([j for j in range(DESTROY_OPERTATORS)],p = normalize(destroy_weights))
         repair_index = rng.choice([j for j in range(REPAIR_OPERTATORS)],p = normalize(repair_weights))
         destroy_weights_list.append(tuple(normalize(destroy_weights)))
@@ -186,7 +151,6 @@ def ALNS(FILE,N_VEHICLES,CAPACITY):
         temp_routes = copy.deepcopy(routes)
         temp_routes = destroy_operator(temp_routes,destroy_index,data,initial_data,parameters,degree_of_destruction)
         temp_routes = repair_operator(temp_routes,repair_index,data,initial_data,parameters)
-        # temp_routes = create_trips(temp_routes,data,initial_data,parameters)
 
         if not route_check(temp_routes,data,initial_data,parameters,log =True): #if route is infeasible skip (this is not supposed to happen)
             print('Repair_operator', repair_index)
@@ -201,7 +165,6 @@ def ALNS(FILE,N_VEHICLES,CAPACITY):
         temp_obj = objective_function(temp_routes,data,initial_data,parameters)
         score = 0
 
-        # print(temp_routes)
         if Accept(obj,temp_obj,temperature) and not temp_routes==routes:
             if temp_obj>obj:
                 score = SCORING[1]
@@ -209,31 +172,28 @@ def ALNS(FILE,N_VEHICLES,CAPACITY):
                 score = SCORING[2]
             routes = temp_routes
             obj = temp_obj
-            non_improvement +=1
+            non_improvement += 1
             if obj > best_obj:
                 non_improvement = 0
                 best_obj = obj
                 best_route = tuple(tuple(route) for route in routes)
                 score = SCORING[0]
-                # RESET = False
-                # print ("Best_obj",best_obj)
+                print ("Best_obj",best_obj)
 
         else:
             non_improvement +=1
-            
-   
-        # if cycles >5: #update weights after first few cycles
+
+
         destroy_score[destroy_index] += score
         repair_score[repair_index] += score
         destroy_count[destroy_index] += 1
         repair_count[repair_index] += 1
         if cycles % NO_ITER == 0:
-            destroy_weights = update_weights_newest(destroy_weights,destroy_score,LEARNING_RATE,destroy_count)
-            repair_weights = update_weights_newest(repair_weights,repair_score,LEARNING_RATE,repair_count)
+            destroy_weights = update_weights(destroy_weights,destroy_score,LEARNING_RATE,destroy_count)
+            repair_weights = update_weights(repair_weights,repair_score,LEARNING_RATE,repair_count)
             destroy_score, repair_score = [0]*DESTROY_OPERTATORS, [0]*REPAIR_OPERTATORS
             destroy_count, repair_count = [0]*DESTROY_OPERTATORS, [0]*REPAIR_OPERTATORS
-        # destroy_weights = update_weights_new(destroy_weights,score,destroy_index,LEARNING_RATE)
-        # repair_weights = update_weights_new(repair_weights,score,repair_index,LEARNING_RATE)
+
         
         temp_obj_list.append(temp_obj)
         curr_obj_list.append(obj)
@@ -242,78 +202,70 @@ def ALNS(FILE,N_VEHICLES,CAPACITY):
         cycles +=1
 
         if non_improvement >= early_term: #too many non-imporvement cycles
-            if not RESET:
             # if routes!= best_route: #set candidate route to best route
+            if not RESET:
                 # print('Reset to best route')
+                RESET = True
                 routes = list(list(route) for route in best_route)
                 non_improvement = 0
-                RESET = True
             else: #if candidate route same as best route, end cycle early
                 print('Too many non-improvements')
+                # cycles +=1
                 break 
         pbar.update(1)
 
     pbar.close()
+    print("The difference of time is :",
+                timeit.default_timer() - start)
 
     print ("Best obj:", best_obj)
     print("Distance Travelled", distance_travelled(best_route, data, initial_data, parameters))
-    def flatten_comprehension(matrix):
-        return [item for row in matrix for item in row]
-    cust_visted = flatten_comprehension(best_route)
-    cust_visted = [i for i in cust_visted if i!=0]
+    print("Goods Delivered", goods_delivered(best_route, data, initial_data, parameters))
     routes= []
     for route in best_route:
         routes.append([data.cust_no[i] for i in route])
-   
+    print ("Best routes:", routes)
+    print (route_check(best_route,data,initial_data,parameters,log=True))
+    def flatten_comprehension(matrix):
+        return [item for row in matrix for item in row]
+
+    cust_visted = flatten_comprehension(best_route)
+    # print("Customers Visited:", len(set(cust_visted)))
+    cust_visted = [i for i in cust_visted if i!=0]
+    print("Customers Visited:", len(cust_visted))
+    # print(cycles)
+    # print(len(temp_obj_list))
+    if PLOT:
+        #plot objective function
+        fig, ax = plt.subplots()
+        ax.set_title('Obj Function')
+        x = range(cycles)
+        ax.plot(curr_obj_list, c = 'b')
+        ax.scatter(x,temp_obj_list, c = 'r', s=1)
+        ax.plot(best_obj_list, c = 'g')
+        ax.set_ylim(0,float(max(best_obj_list))*1.10)
+        ax.set_xlim(0,cycles)
+
+        # plot destroy weights graph
+        fig, ax = plt.subplots()
+        ax.set_title('Destroy Weights')
+        # make data
+        y = np.array(destroy_weights_list)
+        ax.plot(x, y, label = ['RR','BC','SR'])
+        ax.legend()
+
+        # plot repair weights graph
+        fig, ax = plt.subplots()
+        ax.set_title('Repair Weights')
+        # make data
+        x = range(cycles)
+        y = np.array(repair_weights_list)
+        ax.plot(x, y, label = ['RBI','BI','RI'])
+        ax.legend()
+
+        plot_route(best_route,data,initial_data,parameters)
+        plot_time(best_route,data,initial_data,parameters)
+        print("number of iterations to update weights",NO_ITER)
+        plt.show()
+
     return distance_travelled(best_route, data, initial_data, parameters), timeit.default_timer() - start,len(cust_visted), routes
-'''
-FILE_LIST= ['experiment2_data/C101_test',
-            'experiment2_data/C109_test',
-            'experiment2_data/C201_test',_
-            'experiment2_data/C208_test',
-            'experiment2_data/R101_test',
-            'experiment2_data/R112_test',
-            'experiment2_data/R201_test',
-            'experiment2_data/R211_test',
-            'experiment2_data/RC101_test',
-            'experiment2_data/RC108_test',
-            'experiment2_data/RC201_test',
-            'experiment2_data/RC208_test']
-
-VEHICLES_LIST = [10,10,3,3,20,10,8,4,15,11,9,4]
-CAPACITY_LIST = [200,200,700,700,200,200,1000,1000,200,200,1000,1000]
-'''
-FILE_LIST= ['experiment2_data/C201_test',
-            'experiment2_data/C208_test',
-            'experiment2_data/R201_test',
-            'experiment2_data/R211_test',
-            'experiment2_data/RC201_test',
-            'experiment2_data/RC208_test']
-
-# VEHICLES_LIST = [8,8,8,8,8,8]
-VEHICLES_LIST = [2,2,2,2,2,2]
-# VEHICLES_LIST = [4,4,4,4,4,4]
-
-CAPACITY_LIST = [100,100,100,100,100,100]
-result_dict = defaultdict(list)
-route_dict = defaultdict(list)
-for i, file in enumerate(FILE_LIST):
-    
-    for a in range(5):
-        print(f"FILE: {file}, iteration:{a+1}"
-              )
-        result, time,visited, best_route = ALNS(file,VEHICLES_LIST[i],CAPACITY_LIST[i])
-        best_route = tuple(tuple(int(i) for i in route_trips) for route_trips in best_route)
-        result_dict[file].append((float(result),round(time,3),visited))
-        route_dict[file].append(best_route)
-        # if result < 1509.5:
-        #     break
-
-import json
-
-with open('result.json', 'w') as fp:
-    json.dump(result_dict, fp, sort_keys=True, indent=4)
-
-with open('route.json', 'w') as fp:
-    json.dump(route_dict, fp, sort_keys=True)#, indent=4)  
-print(result_dict)

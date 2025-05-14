@@ -1,0 +1,45 @@
+Solver command line: []
+
+Read LP format model from file C:\Users\caleb\AppData\Local\Temp\tmpnl6w4oc4.pyomo.lp
+Reading time = 0.04 seconds
+x1: 6785 rows, 6728 columns, 29220 nonzeros
+Set parameter TimeLimit to value 180
+Set parameter Threads to value 4
+Set parameter MIPFocus to value 0
+Gurobi Optimizer version 12.0.0 build v12.0.0rc1 (win64 - Windows 10.0 (19045.2))
+
+CPU model: Intel(R) Core(TM) i7-10510U CPU @ 1.80GHz, instruction set [SSE2|AVX|AVX2]
+Thread count: 4 physical cores, 8 logical processors, using up to 4 threads
+
+Non-default parameters:
+TimeLimit  180
+Threads  4
+
+Optimize a model with 6785 rows, 6728 columns and 29220 nonzeros
+Model fingerprint: 0x4d18b25b
+Variable types: 1344 continuous, 5384 integer (5384 binary)
+Coefficient statistics:
+  Matrix range     [2e-01, 1e+03]
+  Objective range  [7e-01, 3e+02]
+  Bounds range     [1e+00, 1e+03]
+  RHS range        [1e+00, 1e+03]
+Presolve removed 1248 rows and 1132 columns
+Presolve time: 0.07s
+Presolved: 5537 rows, 5596 columns, 26580 nonzeros
+Variable types: 206 continuous, 5390 integer (5384 binary)
+
+Root relaxation: objective 3.292360e+03, 726 iterations, 0.03 seconds (0.03 work units)
+
+    Nodes    |    Current Node    |     Objective Bounds      |     Work
+ Expl Unexpl |  Obj  Depth IntInf | Incumbent    BestBd   Gap | It/Node Time
+
+     0     0 3292.36000    0   98          - 3292.36000      -     -    0s
+
+Explored 1 nodes (861 simplex iterations) in 0.19 seconds (0.16 work units)
+Thread count was 4 (of 8 available processors)
+
+Solution count 0
+
+Solve interrupted
+Best objective -, best bound 3.292360000000e+03, gap -
+

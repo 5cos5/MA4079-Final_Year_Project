@@ -1,25 +1,10 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 import pyomo.environ as pyo
-
 from scipy.spatial.distance import pdist, squareform
-
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-
 import pandas as pd
 
-def MILP(FILE):
-    # FILE = 'test1'
-    # ACCURATE = False
-    # FILE = 'shuffled_ordered_data/R211_shuffled_ordered'
-    # FILE = 'shuffled_data/R211_shuffled'
-    # FILE = 'test_data/test6'
-    # FILE = 'test_data/R211_test'
-    # FILE = 'experiment2_data/RC201_test'
-    FILE_NAME = "C:/Users/caleb/Desktop/Study/FYP/Data/"+FILE+".csv"
+def MILP(FILE,N,N_VEHICLES,CAPACITY,R):
+    FILE_NAME = "Data/"+FILE+".csv"
     data = pd.read_csv(FILE_NAME)
     data.columns = data.columns.astype(str)
 
@@ -27,10 +12,6 @@ def MILP(FILE):
     CUSTOMERS_LIST = []
     data = data.loc[(data['DUE DATE'] >= PLANNING_TIME) | (data['CUST NO.'].isin(CUSTOMERS_LIST))]
 
-    N = 25
-    CAPACITY = 100
-    N_VEHICLES = 2
-    R = 3 #number of trips. set to a fiarly large number
     DEMAND_TYPES = 5
     VEHICLE_COMPARMENTS = 5
 
@@ -38,18 +19,17 @@ def MILP(FILE):
     df = data[:N+1]
     cust_no = np.array(df.loc[:,'CUST NO.'])
     demands = np.array(df.loc[:,'DEMAND'])
-    service_time = np.array(df.loc[:,'SERVICE TIME'])#demands #np.zeros(len(demands)) #demands 
+    service_time = np.array(df.loc[:,'SERVICE TIME'])
     demands_zeros = np.zeros((len(demands), DEMAND_TYPES-1))
     demands = np.hstack((demands.reshape(N+1,1),demands_zeros))
     coordinates = np.array(df.loc[:,['XCOORD','YCOORD']])
     start_time_windows = np.array(df.loc[:,'READY TIME'])
-    end_time_windows = np.array(df.loc[:,'DUE DATE']) #+ service_time
+    end_time_windows = np.array(df.loc[:,'DUE DATE']) 
 
     demands_index = [i for i in range(1,N+1)]
 
     START_TIME = start_time_windows[0]
-    # START_TIME = 100
-    END_TIME = end_time_windows[0] #+ service_time[1]
+    END_TIME = end_time_windows[0]
 
     demands_shuffled = np.array(df.iloc[:,4:9])
 
@@ -59,7 +39,6 @@ def MILP(FILE):
     distances = trunc(distances)
     travel_time = distances
     model = pyo.ConcreteModel()
-
 
     # ## Sets
     model.D = pyo.Set(initialize=demands_index) #set of vessels
@@ -71,29 +50,21 @@ def MILP(FILE):
     model.F = pyo.Set(initialize = range(DEMAND_TYPES)) #set of demand types
 
 
+    zeta = 0.1 # travel cost per distance factor
+    price = [10]*DEMAND_TYPES
+
     # ## Parameters
-
-    zeta = 0.01 # travel cost per distance factor
-    price = [1]*DEMAND_TYPES
-
-
-    # In[272]:
-
-
     model.q = pyo.Param(model.K, model.F, initialize={(i,f): vehicle_capacities[i,f] for i in model.K for f in model.F}) #capacity of vehicles
     model.c = pyo.Param(model.A, initialize={(i, j): zeta*distances[i, j] for (i, j) in model.A}) #cost of travel per arc
     model.n = pyo.Param(model.N, model.F, initialize={(i,f): demands_shuffled[i,f] for i in model.N for f in model.F}) #loading of all nodes
     model.r = pyo.Param(model.N, model.F, initialize={(i,f): price[f]*demands_shuffled[i,f] for i in model.N for f in model.F}) #revenue of all nodes
     model.s = pyo.Param(model.N, initialize=service_time) #service time per node
     model.t = pyo.Param(model.N, model.N, initialize={(i, j): travel_time[i, j] for i in model.N for j in model.N}) #travel time per arc)
-    # model.t = pyo.Param(model.N, model.N, initialize={(i, j): travel_time[i, j] for i in model.N for j in model.N}) #travel time per arc)
     model.a = pyo.Param(model.N, initialize=start_time_windows) #start time windows per node
     model.b = pyo.Param(model.N, initialize=end_time_windows) #end time windows per node
 
 
     # ## Variables
-
-    # In[273]:
     new_start_time_windows = np.append(start_time_windows, START_TIME)
     new_start_time_windows = [[new_start_time_windows]*R]*N_VEHICLES
 
@@ -104,30 +75,20 @@ def MILP(FILE):
 
     model.X = pyo.Var(model.A, model.K, model.R, within=pyo.Binary) # decision to move along arc ij by vehicle K on trip R
     model.Y = pyo.Var(model.N, model.K, model.R, within=pyo.Binary) # decision of if node N is visited by vehicle K on trip R
-    #model.Q = pyo.Var(model.N, model.K, model.R, within=pyo.NonNegativeReals) #sum of all load before serving node N on vehicle K on trip R
     model.T = pyo.Var(model.N1, model.K, model.R, within=pyo.NonNegativeReals, bounds= time_windows) # visit time at node N by vehicle K on trip R
     model.S = pyo.Var(model.K, model.R, within=pyo.NonNegativeReals, bounds= (0,CAPACITY*DEMAND_TYPES)) #serivce time at the depot for the start of each trip
-
-    # model.Z = pyo.Var(model.K, model.R, model.F, within=pyo.Binary) #decision if fuel type f is carried by vehicle K on trip R
-
     model.L = pyo.Var([0,N+1], model.K, model.R, model.F, within=pyo.NonNegativeReals, bounds= (0,CAPACITY)) # fuel load on vehicle K on trip R for fuel type F
-    # model.L_initial = pyo.Var(model.K, model.F, within=pyo.NonNegativeReals, bounds= (0,CAPACITY))
     model.U = pyo.Var(model.N, model.K, model.R, model.F, within=pyo.NonNegativeReals, bounds= (0,CAPACITY))
-
-
-    # ## Constraints
 
     M = np.zeros((N+1,N+1))
     beta = 0.2 # rate of fuel transfer at the depot
     for i in model.N:
         for j in model.N:
             M[i,j] = model.b[i] + model.s[i] + model.t[i,j] - model.a[j]
-        #    M[i,j] =  model.b[i] + model.s[i] + travel_time[i,j] 
     for j in model.N:
         M[0,j] = model.b[0] + CAPACITY*DEMAND_TYPES*beta + model.t[0,j] - model.a[j]
-        # M[0,j] =  model.b[0] +CAPACITY*DEMAND_TYPES*0.2 + travel_time[0,j]
 
-
+    # ## Constraints
     def visit_once_rule(model,i): #2/13
         return sum(model.Y[i,k,r] for k in model.K for r in model.R) == 1
     model.visit_once_rule = pyo.Constraint(model.D, rule=visit_once_rule)
@@ -168,26 +129,8 @@ def MILP(FILE):
     def trip_end_after_start (model, k,r): #modified (necessary)
         return model.T[0,k,r] + model.S[k,r] <= model.T[N+1,k,r]
     model.trip_end_after_start = pyo.Constraint(model.K, model.R, rule=trip_end_after_start)    
-    '''
-    def trip_start_after_time_window_start (model, i,k,r): #68
-        # return model.a[i] *model.Y[i,k,r] <= model.T[i,k,r]
-        return model.a[i] <= model.T[i,k,r]
-    model.trip_start_after_time_window_start = pyo.Constraint(model.D, model.K, model.R, rule=trip_start_after_time_window_start)
-
-    def trip_end_before_time_window_end (model, i,k,r): #68 
-        return model.T[i,k,r] <= (model.b[i]) #*model.Y[i,k,r]
-        # return model.T[i,k,r] <= (model.b[i]- model.s[i])*model.Y[i,k,r]  #modified to include service time
-    model.trip_end_before_time_window_end = pyo.Constraint(model.D, model.K, model.R, rule=trip_end_before_time_window_end)
-
-    def trip_end_before_end_time(model,k,r): # 69
-        return model.T[N+1,k,r] <= END_TIME
-    model.trip_end_before_end_time = pyo.Constraint(model.K, model.R, rule=trip_end_before_end_time)'''
-
-
 
     # ## Service time at depot
-
-
     full_capacity = [CAPACITY]*VEHICLE_COMPARMENTS
 
     def service_time_at_depot (model,k,r): #73 modified
@@ -200,8 +143,6 @@ def MILP(FILE):
 
 
     # ## Vehicle Loading
-
-
     def fuel_del_to_visit(model,i,k,r,f): #if cust i is visited, U>0 else set  U = 0
         return model.U[i,k,r,f] == model.Y[i,k,r] * model.n[i,f]
 
@@ -239,8 +180,6 @@ def MILP(FILE):
 
 
     # ## Inital Conditions
-
-
     full_capacity = [CAPACITY]*VEHICLE_COMPARMENTS
     empty_capacity = [0]*VEHICLE_COMPARMENTS
 
@@ -263,14 +202,15 @@ def MILP(FILE):
         route3_index = None
 
     #time start at depot
-    time_start_1 = 0#50 - travel_time[depot_index,route1_index]
-    time_start_2 = 0#50 - travel_time[depot_index,route2_index]
-    time_start_3 = 0#50 - travel_time[depot_index,route3_index]
+    time_start_1 = 0
+    time_start_2 = 0
+    time_start_3 = 0
 
     #loading of vehicle before top up
     loading1 = full_capacity
     loading2 = full_capacity
     loading3 = full_capacity
+
     #check that given load does not exceed vehicle capacity
     for i, cap in enumerate(full_capacity):
         if (loading1[i] > cap) or (loading2[i] > cap) or (loading3[i] > cap) :
@@ -324,35 +264,12 @@ def MILP(FILE):
     #solvers glpk  appsi_highs cplex gurobi gurobi_persistent
 
     solver = pyo.SolverFactory(SOVLER_ENGINE)
-
-    if SOVLER_ENGINE == 'cbc':
-            solver.options['seconds'] = TIME_LIMIT
-    elif SOVLER_ENGINE == 'glpk':
-            solver.options['tmlim'] = TIME_LIMIT
-    elif SOVLER_ENGINE == 'appsi_highs':
-            solver.options['time_limit'] = TIME_LIMIT
-            #solver.options['parallel'] = True
-            solver.options['threads'] = THREADS
-    elif SOVLER_ENGINE == 'cplex':
-            solver.options['timelimit'] = TIME_LIMIT
-            solver.options['threads'] = THREADS
-    elif SOVLER_ENGINE == 'gurobi':
-            solver.options['timelimit'] = TIME_LIMIT
-            solver.options['threads'] = THREADS
-            solver.options['MIPFocus'] = MIPFocus
-            # solver.options['DegenMoves'] = 0
-    elif SOVLER_ENGINE == 'gurobi_persistent':
-            solver.options['timelimit'] = TIME_LIMIT
-            solver.options['threads'] = THREADS
-            solver.set_instance(model) # remove model from  solver.solve(tee=True)
-            solver.options['MIPFocus'] = MIPFocus
-            solver.set_gurobi_param("PoolSolutions", 500)
-            solver.set_gurobi_param("PoolSearchMode", 0)
-            # solver.set_callback(mycallback)
-    # sol = solver.solve(tee= True)
-    logfile = FILE+str(N)+'.txt'
+    solver.options['timelimit'] = TIME_LIMIT
+    solver.options['threads'] = THREADS
+    solver.options['MIPFocus'] = MIPFocus
+    temp = FILE.split('/')
+    logfile = temp[1]+str(N)+'.txt'
     sol = solver.solve(model, tee= True, logfile= logfile) #, warmstart=True , logfile= 'log.txt'
-
 
 
     print(sol.solver.status)
@@ -376,29 +293,22 @@ def MILP(FILE):
                                                 for (i,j) in model.A
                                                 for k in model.K
                                                 for r in model.R))
-'''
-FILE_LIST= ['shuffled_data/C101_shuffled',
-            'shuffled_data/C109_shuffled',
-            'shuffled_data/C201_shuffled',
-            'shuffled_data/C208_shuffled',
-            'shuffled_data/R101_shuffled',
-            'shuffled_data/R112_shuffled',
-            'shuffled_data/R201_shuffled',
-            'shuffled_data/R211_shuffled',
-            'shuffled_data/RC101_shuffled',
-            'shuffled_data/RC108_shuffled',
-            'shuffled_data/RC201_shuffled',
-            'shuffled_data/RC208_shuffled']'''
 
-FILE_LIST= ['experiment2_data/C208_test',
-            'experiment2_data/C208_test',
-            'experiment2_data/R201_test',
-            'experiment2_data/R211_test',
-            'experiment2_data/RC201_test',
-            'experiment2_data/RC208_test']
 
-FILE_LIST = ['experiment2_data/C208_test']
+FILE_LIST= ['experiment3_data/C208_test',
+            'experiment3_data/C208_test',
+            'experiment3_data/R201_test',
+            'experiment3_data/R211_test',
+            'experiment3_data/RC201_test',
+            'experiment3_data/RC208_test']
 
-for file in FILE_LIST:
-    MILP(file)
+N_LIST  = [25]*len(FILE_LIST)
+VEHICLES_LIST = [2]*len(FILE_LIST)
+CAPACITY_LIST = [100]*len(FILE_LIST)
+R_LIST = [4]*len(FILE_LIST)
+
+
+
+for i, file in enumerate(FILE_LIST):
+    MILP(file,N_LIST[i], VEHICLES_LIST[i], CAPACITY_LIST[i], R_LIST[i])
     

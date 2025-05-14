@@ -1,5 +1,5 @@
 from model_check import cust_no_index
-from read_data_expt2 import Input, InitialData, InputParameters
+from read_data import Input, InitialData, InputParameters
 import numpy as np
 import logging
 

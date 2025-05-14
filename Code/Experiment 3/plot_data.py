@@ -1,4 +1,4 @@
-from read_data_expt2 import Input, InitialData, InputParameters
+from read_data import Input, InitialData, InputParameters
 from model_check import cust_no_index, trip_split, route_check,objective_function
 from trip_generator import create_trips, remove_trips, remove_depots
 import numpy as np

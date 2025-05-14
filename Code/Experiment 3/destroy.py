@@ -27,25 +27,12 @@ def random_remove_point (routes,data,initial_data,parameters,degree_of_destructi
         k,i = find_cust(routes,remove_cust)
         del routes[k][i]
         customers.remove(remove_cust)
-        '''
-        remove_veh = rng.integers(len(routes))
-        while len(routes[remove_veh]) <= 1: #roll until we do not get an empty vehicle
-            remove_veh = rng.integers(len(routes))
-        remove_position = rng.integers(1,len(routes[remove_veh])) #dont remove the first posiiton
-        while routes[remove_veh][remove_position] == 0: # if we are removing the depot, just roll again
-            remove_veh = rng.integers(len(routes))
-            while len(routes[remove_veh]) <= 1: #roll until we do not get an empty vehicle
-                remove_veh = rng.integers(len(routes))
-            remove_position = rng.integers(1,len(routes[remove_veh])) #dont remove the first posiiton
-        del routes[remove_veh][remove_position]'''
     return routes
 
 def greedy_remove_distance(routes,data,initial_data,parameters,degree_of_destruction):
     '''
     ### Removes customers which has the highest distance cost
     '''
-    # demands = np.array(data.demands)
-    # cust_no = np.array(data.cust_no)
     distances = np.array(data.distances)
     
     for _ in range(degree_of_destruction):
@@ -58,13 +45,12 @@ def greedy_remove_distance(routes,data,initial_data,parameters,degree_of_destruc
                     route_distance.append(0)
                     continue
                 else:
-                    # print (idx)
                     prev_cust = route[idx]
                     next_cust = route[idx+2]
                     distance = distances[cust,next_cust]
                     distance += distances[prev_cust,cust]
                     route_distance.append(distance)
-            # print (route_distance)
+
             if len(route_distance) != 0: 
                 max_index = np.argmax(np.array(route_distance))
                 routes_max_distance.append(route_distance[max_index])
@@ -84,10 +70,6 @@ def shaw_score(i,j,data,initial_data,parameters,a=1,b=1):
     distance = data.distances[i,j]
     start_time_difference = abs(data.start_time_windows[i] - data.start_time_windows[j])
     end_time_difference = abs(data.end_time_windows[i] - data.end_time_windows[j])
-    '''
-    loading_temp = np.array(data.demands[i]) + np.array(data.demands[j])
-    if (loading_temp>parameters.MAX_CAPACITY).any():
-        load_score = '''
     return a*distance + b*(start_time_difference+end_time_difference)
 
 def shaw_removal(routes,data,initial_data,parameters,degree_of_destruction):
@@ -110,9 +92,7 @@ def shaw_removal(routes,data,initial_data,parameters,degree_of_destruction):
             else:
                 score = shaw_score(seed_cust,cust,data,initial_data,parameters,a=1,b=1)
                 score_dict[(k,idx,cust)] = score
-        # print (route_scores)
     sorted_dict = {k: v for k, v in sorted(score_dict.items(), key=lambda item: item[1])}
-    # print(sorted_dict)
 
     sorted_dict_keys = list(sorted_dict.keys())
     # print(sorted_dict_keys)
@@ -120,8 +100,6 @@ def shaw_removal(routes,data,initial_data,parameters,degree_of_destruction):
         veh_index = sorted_dict_keys[i][0]
         pos_index= sorted_dict_keys[i][1]
         cust = sorted_dict_keys[i][2]
-
         routes[veh_index].remove(cust) #note:seed customer is also removed
-        # print(routes)
-    # routes = remove_trips(routes)
+
     return routes
